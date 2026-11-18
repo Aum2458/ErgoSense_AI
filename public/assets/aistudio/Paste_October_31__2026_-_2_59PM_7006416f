@@ -1,0 +1,266 @@
+# MASTER SYSTEM PROMPT (v2.0): BUILD "ERGOSENSE AI" — WEB-FIRST PERSONAL MOVEMENT INTELLIGENCE PLATFORM
+
+You are an elite Principal Full-Stack Architect, Computer Vision Engineer, and Ergonomic Product Designer. Build the complete, production-grade, responsive Web-First SaaS platform for **"ErgoSense AI – Your Personal 24/7 Body Wellness Companion"**.
+
+---
+
+## 1. PRODUCT IDENTITY, VISION & CORE PHILOSOPHY
+- **Product Name:** ErgoSense AI
+- **Category:** Personal Movement Intelligence Platform (AI + Computer Vision + Wearable & Sensor Intelligence)
+- **Tagline:** "Move better. Live smarter."
+- **Subtitle:** "Your intelligent companion for movement, posture, and everyday ergonomic wellness."
+- **Core Philosophy:**
+  1. **Web-First SaaS Platform:** The browser application is the primary product—running seamlessly across desktop/laptop browsers, tablets, and smartphones, and installable as an offline-capable Progressive Web App (PWA).
+  2. **Personal Movement Baseline (OSHA Non-Rigid Philosophy):** Following OSHA ergonomic guidelines, there is no single "ideal textbook posture" forced onto every user. ErgoSense calibrates to each individual's **Personal Movement Baseline** (unique body proportions, mobility needs, workstation geometry, and comfort preferences) and adapts continuously via closed-loop user feedback.
+  3. **24/7 Availability Without 24/7 Surveillance:** Enforce a strict engineering boundary between:
+     - *Always Available:* Cloud dashboard, AI coach, comfort journal, and analytics accessible 24/7.
+     - *Context-Aware:* Permitted background smartphone/wearable motion sensors during travel or walking without camera usage.
+     - *Explicit Live Visual Monitoring:* Activated strictly when the user starts a camera session, processed 100% locally in browser memory (WebGL/WASM), storing only anonymized joint-angle and temporal state summaries—never raw video frames.
+  4. **Non-Medical Guardrail:** Support general wellness, movement habits, and ergonomic workstation awareness; never claim to diagnose medical conditions or predict clinical injuries.
+
+---
+
+## 2. TECH STACK & BROWSER-NATIVE AI ARCHITECTURE
+- **Frontend Framework:** Next.js 14+ (App Router), React 18+, TypeScript, Tailwind CSS, Framer Motion, Lucide Icons, Recharts, Zustand.
+- **In-Browser Computer Vision & Sensor Engine:**
+  - `@mediapipe/tasks-vision` (`PoseLandmarker` extracting 33 2D/3D world landmarks at 15–30 FPS via WebGL/WASM over HTTPS/localhost).
+  - `OpenCV.js` for image pre-processing, ambient lighting estimation, and desk-setup focal-length geometry.
+  - `TensorFlow.js` / Temporal State Classifier for sitting, standing, walking, repetitive factory motion, elderly postural sway, and exercise repetition recognition.
+  - **W3C Browser Hardware APIs:**
+    - `navigator.mediaDevices.getUserMedia` for explicit webcam sessions with instant hardware track release (`MediaStreamTrack.stop()`).
+    - `DeviceMotionEvent` & `DeviceOrientationEvent` (including explicit iOS `DeviceMotionEvent.requestPermission()` handler) for camera-free **Travelling & Walking Mode** via 3-axis accelerometer and gyroscope fusion.
+    - `navigator.bluetooth` (Web Bluetooth API) + WebSocket Sensor Bridge for pairing optional posture wearables or smartwatches.
+- **Background Continuity (Solving Browser Tab Throttling & DOM Limits):**
+  - **Web Worker Heartbeat Clock:** Because browser Web Workers cannot access `HTMLVideoElement` in the DOM, run a dedicated Web Worker strictly as an unthrottled 10 Hz clock (`setInterval` posting `"TICK"` every 100 ms). The main thread listens for `"TICK"` and executes `poseLandmarker.detectForVideo(videoElement, performance.now())` so posture analysis never freezes when the user switches to VS Code, Word, or another browser tab.
+  - **Cross-Browser Picture-in-Picture (PiP) Mini-Companion:** Support Chrome/Edge `documentPictureInPicture` API first, and automatically fall back to rendering the live skeletal HUD + status pill onto an HTML5 `<canvas>`, piping `canvas.captureStream(15)` into a hidden `<video>` element, and invoking `video.requestPictureInPicture()` for Safari and Firefox compatibility.
+- **Offline-First Persistence & Cloud Backend:**
+  - **Local-First Browser Storage:** Persist user profiles, calibrated baselines, 60-second telemetry rollups, comfort journal entries, and volunteer trial datasets in browser `IndexedDB` (with `localStorage` fallback) so the entire platform works 100% offline or serverless, syncing via a background retry queue when connected.
+  - **Backend API & Database:** Python FastAPI + PostgreSQL + WebSockets for real-time cross-device synchronization.
+  - **AI Coaching Engine:** LLM + Retrieval-Augmented Generation (RAG) grounded in the user's PostgreSQL/IndexedDB movement history, comfort journal correlations, and verified OSHA ergonomic guidelines, with full voice and text support in **English (`en-IN`/`en-US`), Hindi (`hi-IN`), and Gujarati (`gu-IN`)** via Web Speech API (`speechSynthesis` & `SpeechRecognition`).
+
+---
+
+## 3. VISUAL DESIGN SYSTEM ("CLINICAL BIOMETRIC DARK & DAYLIGHT")
+- **Dual-Theme Support:** Crisp Clinical Daylight Mode for public marketing pages and printable reports, paired with low-glare Studio Dark Mode (`#020617` Slate-950 canvas) for active camera monitoring.
+- **Semantic Biometric Color Tokens:**
+  - `OPTIMAL` (Within Personal Baseline): Emerald-500 (`#10B981`)
+  - `TRANSIENT_SHIFT` (<15s normal movement or reach — alert suppressed): Amber-500 (`#F59E0B`)
+  - `SUSTAINED_DEVIATION` (Persists >=75% of rolling 30s window): Rose-500 (`#F43F5E`)
+  - `STATIC_FATIGUE` (Prolonged immobility >40 mins regardless of alignment): Cyan-500 (`#06B6D4`)
+  - `UNRELIABLE_VIEW / STANDBY` (Landmark visibility <0.65 or camera off): Slate-500 (`#64748B`)
+- **Typography:** Clean geometric sans-serif (`Inter` / `Plus Jakarta Sans`) for UI; monospace (`JetBrains Mono`) for live joint angles, Z-scores, FPS, viewing distance (cm), and latency (ms) readouts.
+
+---
+
+## 4. WEBSITE STRUCTURE: TWO CONNECTED EXPERIENCES
+
+### PART A: PUBLIC WEBSITE (UNAUTHENTICATED MARKETING & TRUST PLATFORM)
+Build a cohesive public web experience with a sticky glassmorphic navigation bar, interactive previews, and a full footer across these 8 routes/sections:
+
+1. **Home (`/`)**
+   - Hero section featuring brand identity ("ErgoSense AI — Personal Movement Intelligence: Move better. Live smarter."), primary CTAs ("Launch Web Studio", "Calibrate My Baseline"), and an interactive skeletal posture preview card.
+   - Four core value pillars: *Live Movement AI* (Understand body movement), *Personal Intelligence* (Learn individual habits), *Wellness Insights* (Understand daily trends), and *AI Companion* (Personalized support available whenever you need it).
+   - Interactive "Day in the Life with ErgoSense" timeline explorer:
+     - `8:00 AM – Studying`: Laptop camera detects prolonged forward head positioning -> suggests screen-height adjustment.
+     - `10:30 AM – Travelling`: Smartphone IMU motion sensors identify walking and transit patterns -> no camera monitoring required.
+     - `12:00 PM – Working`: Desktop companion detects prolonged static sitting -> offers a short movement break.
+     - `3:00 PM – Exercising`: Camera tracks 33 body landmarks during a workout -> gives real-time rep and form feedback.
+     - `6:00 PM – Driving`: Provides a pre-drive seating checklist and safe, non-distracting audio break reminders (strictly blocks visual alerts while driving).
+     - `10:00 PM – Daily Report`: AI summarizes movement habits, activity patterns, reminders followed, and tomorrow's plan.
+
+2. **How It Works (`/how-it-works`)**
+   - Interactive visual walkthrough of the **Three Intelligence Layers**:
+     1. *Observe – Understand Body Movement*: Browser webcam, smartphone accelerometer/gyroscope sensors, and optional wearables collecting signals with explicit user permission.
+     2. *Understand – Personal AI Intelligence*: Activity classification, repeated movement patterns, static position duration, and individual baseline preferences.
+     3. *Support – Help at the Right Moment*: Real-time guidance, adaptive context-aware reminders, practical workstation adjustments, and personalized movement routines.
+
+3. **AI Technology (`/technology`)**
+   - Interactive 5-layer architecture diagram:
+     - *Input Layer* (Camera, Phone IMU Sensors, Optional Smartwatch, User Comfort Feedback)
+     - *Computer Vision Engine* (MediaPipe 33-landmark 3D Pose Estimation, OpenCV.js lighting/distance processing, EMA smoothing, Joint angle vector math)
+     - *Personal Intelligence Engine* (Temporal activity classification, 30s sliding-window hysteresis, Personal baseline Z-scores, Closed-loop adaptive drift updater)
+     - *AI Coaching Engine* (LLM + RAG recommendations, Multilingual EN/HI/GU voice assistance, Custom movement routines, Smart notification gating)
+     - *User Experience Layer* (Responsive Web App, Cross-browser PiP Mini-Companion, Wearable notifications, Personal & Org dashboards)
+   - Live comparison demonstrating why ErgoSense's temporal movement engine outperforms naive single-frame "Your head is tilted" detectors.
+
+4. **Features (`/features`)**
+   - Interactive showcase of the **10 Core Product Modules**:
+     1. `Live Posture AI`: Camera-based posture and body alignment observations with desk-occlusion fallback.
+     2. `Movement Intelligence`: Sitting, standing, walking, and activity pattern recognition.
+     3. `Smart Break Coach`: Adaptive reminders based on continuous user activity and static load.
+     4. `Personal Body Profile`: Individual anatomical baseline, habits, and ergonomic preferences.
+     5. `Exercise Form Coach`: Real-time landmark FSM tracking and rep/symmetry feedback on supported exercises.
+     6. `Desk Setup Analyzer`: Evaluates viewing distance (cm), screen height offset, and elbow/desk geometry.
+     7. `Pain & Comfort Journal`: Tracks user-reported localized discomfort and correlates it with movement history.
+     8. `Daily Body Insights`: Summarizes daily and weekly movement habits and compliance trends.
+     9. `AI Wellness Assistant`: Conversational RAG coach explaining observations and suggesting practical actions.
+     10. `Multi-Device Sync`: Connects desktop web, mobile browser PWA, and supported wearables.
+   - Highlight the **5 Key Product Differentiators**:
+     - *A. Personal Movement Intelligence* (Learns baseline & adapts via comfort feedback)
+     - *B. Any-Activity AI Coach* (Multi-mode analysis across desk work, study, exercise, factory tasks, elderly balance, and driving)
+     - *C. Context-Aware Smart Notifications* (Fires only when meaningful patterns persist and timing is appropriate)
+     - *D. Personal AI Movement Coach* (Answers "Why is my neck getting tired during work?" or "Give me a two-minute movement routine" using personal history)
+     - *E. Predictive Habit Intelligence* (Detects recurring inactivity or afternoon slouch windows before they become routine)
+
+5. **Who It Is For (`/who-it-is-for`)**
+   - Interactive 9-persona explorer showing tailored workflows and metrics for:
+     1. *Students*: Study posture, desk habits, focus-friendly movement reminders.
+     2. *Office Employees*: Sitting habits, screen positioning, prolonged inactivity alerts.
+     3. *Developers*: Long coding sessions, cervical neck and shoulder tension prevention.
+     4. *Gamers*: Extended sitting endurance and between-match mobility resets.
+     5. *Drivers*: Pre-drive ergonomic seating checklist and safe, non-visual audio break reminders.
+     6. *Factory Workers*: Repetitive upper-limb cadence observation and ergonomic strain risk awareness.
+     7. *Elderly People*: Gentle movement routines and mediolateral balance/stability observations.
+     8. *Freelancers*: Home workstation optimization and daily activity structure.
+     9. *Fitness Enthusiasts*: Exercise form FSM observations, joint symmetry, and tempo tracking.
+
+6. **Privacy & Security (`/privacy`)**
+   - Clear architectural proof of 100% local in-browser camera frame processing, zero unauthorized camera activation, physical webcam LED release guarantee, summary-only database storage, and 1-click data deletion.
+
+7. **Pricing & Business Ecosystem (`/pricing`)**
+   - B2C & B2B offering matrix covering all 7 customer segments (*Individuals, Families, Companies, Universities, Factories, Fitness Centres, Rehabilitation Professionals*) plus the **4-Phase Product Development Roadmap** (Phase 1: Working AI MVP -> Phase 2: Personal AI Coach with Gujarati/Hindi/English voice -> Phase 3: Everywhere Support -> Phase 4: Intelligent Wellness Ecosystem & Developer API).
+
+8. **Authentication (`/login` & `/register`)**
+   - Session-based Sign In / Create Account pages with role/persona selection and a "1-Click Evaluator Demo Login".
+
+---
+
+### PART B: AUTHENTICATED WEB APPLICATION (`/app/*` WORKSPACE)
+Build a unified, state-synchronized SaaS workspace featuring a collapsible sidebar, a **Workspace & Profile Switcher** (*Individual Profile*, *Family Household Profiles*, and *Organization / University Anonymized Ergonomics View*), and a top status bar displaying the Active Activity Mode, Live Camera Hardware Privacy Badge, Picture-in-Picture (PiP) Launcher, Language Switcher (`EN | हिं | ગુજ`), and Quick Stretch button. Implement these **9 Core Workspace Modules**:
+
+#### Screen 1: Personal Onboarding & 60s Baseline Calibration Studio (`/app/onboarding`)
+- **Persona & Environment Setup:** Select primary persona (from the 9 user groups), workstation type (Laptop, External Monitor, Standing Desk, Mobile/Travel, Factory Floor), and mobility/accessibility preferences.
+- **60-Second Guided Camera Calibration:**
+  - *Phase A (30s Natural Comfortable Sitting)* & *Phase B (30s Natural Standing)*.
+  - Records baseline mean ($\mu_i$), standard deviation ($\sigma_i$), baseline shoulder pixel width, and baseline camera Z-depth ($z_{\text{baseline}}$) for Cervical Flexion, Torso Inclination, and Shoulder Symmetry.
+  - Displays an OSHA-aligned visual card showing the user's personalized green comfort envelope.
+
+#### Screen 2: Overview Dashboard (`/app/dashboard`)
+- **Top KPI Row:**
+  - *Daily Movement Intelligence Score* (0–100 radial gauge)
+  - *Personal Baseline Alignment %* (with delta vs. 7-day average)
+  - *Active Static Load Timer* (minutes in current posture without transition)
+  - *Smart Reminder Compliance* (followed vs. snoozed/dismissed ratio)
+- **Quick-Launch Activity Studio Cards:** 1-click launch for *Sitting Work*, *Standing Desk*, *Exercise Form Coach*, *Desk Setup Analyzer*, *Travelling IMU Mode*, or *Driving Safe Mode*.
+- **Predictive Habit Alert Banner:** Proactive time-of-day intervention card (e.g., *"Predictive Insight: Cervical flexion typically rises 34% between 2:30 PM and 4:00 PM during coding. Start a 90-second thoracic reset now?"*).
+- **Chronological Daily Activity Timeline:** Interactive bar mapping Studying, Travelling, Working, Exercising, and Driving blocks across the day.
+
+#### Screen 3: Live AI Monitoring Studio (`/app/live`)
+- **Dual-Mode Viewport (Real Browser Webcam + Interactive Biomechanical Simulator Fallback):**
+  - *Live Webcam Mode:* Connects via `getUserMedia` + HTML5 Canvas overlay drawing the 33 MediaPipe 3D Pose Landmarks, joint angle arcs, and personal baseline tolerance halos.
+  - *Interactive Simulation Fallback Mode:* When no camera is attached or during faculty testing, lets the user manipulate sliders for *Monitor Height Offset (cm)*, *Neck Flexion*, *Torso Slouch*, *Shoulder Tilt*, *Hip Occlusion Toggle*, *Ambient Lighting*, and *Inject 5s Transient Reach* on an interactive 2D/3D skeletal canvas.
+- **Privacy & Window Controls:**
+  - Toggle between *Full Video + Skeleton*, *Privacy Black Canvas (3D Skeleton Only — hides face/room)*, and *Camera Off (Hardware Stream Stopped)*.
+  - **Launch Floating PiP Companion:** Pops out the cross-browser Picture-in-Picture mini-widget so posture status stays visible over any desktop app.
+- **6 Activity Sub-Mode Tabs inside `/app/live`:**
+  1. `Sitting Desk Mode`: Uses Seated Desk Hip-Occlusion Fallback when hips are hidden beneath a desk.
+  2. `Standing Desk Mode`: Tracks full-body alignment, locked-knee sway, and weight-shift balance.
+  3. `Exercise Form Coach`: Real-time 4-state Finite State Machine (`READY` -> `ECCENTRIC` -> `HOLD` -> `CONCENTRIC`) counting reps, tempo (sec/rep), and bilateral joint symmetry for *Bodyweight Squats*, *Cervical Chin Tucks*, *Seated Thoracic Extensions*, and *Overhead Reaches*.
+  4. `Desk Setup Analyzer`: Computes eye-to-screen viewing distance in cm ($50\text{–}75\text{ cm}$ target), vertical screen gaze offset, and elbow keyboard angle ($90^\circ\text{–}115^\circ$), generating a specific setup adjustment checklist.
+  5. `Factory Ergonomic Mode`: Tracks **Repetitive Upper-Limb Cycle Frequency** (cycles/minute of shoulder/elbow elevation) to highlight repetitive motion strain risk.
+  6. `Elderly Balance Mode`: Tracks **Mediolateral Postural Sway** (horizontal Center-of-Mass variance during standing and sit-to-stand transitions).
+- **Real-Time Telemetry Sidebar:**
+  - Displays EMA-smoothed Cervical Angle ($\theta_{\text{neck}}$), Torso Inclination ($\theta_{\text{torso}}$), Shoulder Asymmetry ($\Delta_{\text{shoulder}}$), Viewing Distance ($\text{cm}$), Personal Z-Score ($Z_i$), Landmark Confidence %, and Inference Speed ($\text{ms}$ / $\text{FPS}$).
+  - **Live 30-Second Rolling Temporal Buffer Bar:** Visually proves that brief movements (<15s) remain in `TRANSIENT_SHIFT` (Amber — zero alert) while sustained drift (>=75% of 30s window) enters `SUSTAINED_DEVIATION` (Rose).
+  - **Instant Feedback Button ("I'm Comfortable / False Alert"):** Triggers the Closed-Loop Adaptive Baseline Updater to widen $\sigma_i$ and prevent annoying repeat alerts.
+
+#### Screen 4: Activity & Movement Intelligence (`/app/activity`)
+- **Multi-Activity Distribution:** Daily/weekly hours across Sitting, Standing, Walking/Travelling (from mobile IMU), Exercising, and Static Fatigue.
+- **Micro-Motion Variance Chart ($\sigma^2_{\text{motion}}$):** Rolling 5-minute coordinate variance graph identifying "statue sitting" (muscular immobilization inside a neutral geometric pose).
+- **Predictive Habit Intelligence Panel:** Identifies weekly behavioral anomalies and recommends schedule shifts.
+
+#### Screen 5: Smart Reminders & Driving Safe Mode (`/app/reminders`)
+- **Context-Aware Notification Controls:**
+  - Sliders for *Temporal Persistence Threshold* (15s–60s), *Smart Cooldown Hysteresis* (3–20 mins), and *Static Sitting Break Interval* (30–60 mins).
+  - Delivery toggles: Browser Desktop Notification (`Notification.requestPermission()`), Subtle Web Audio Chime, and Visual Toast.
+- **Driving Safe Mode Controller:**
+  - Interactive Pre-Drive Ergonomic Seating Checklist (headrest gap, lumbar support, knee angle, mirror height, steering wrist reach).
+  - *Strict Driving Safety Lock:* Completely disables all visual popups and camera monitoring while driving; enables safe, non-distracting voice/audio break prompts on configurable intervals.
+- **Guided 60-Second Micro-Break Modal:** Interactive countdown stretch timer with animated form cues and *"Followed / Snooze / Dismiss"* logging.
+
+#### Screen 6: Personal AI Coach (`/app/coach`)
+- **RAG-Grounded Wellness Assistant:**
+  - Reads the user's active Personal Baseline, recent session summaries, Desk Setup Analyzer results, and Pain & Comfort Journal entries to provide transparent, non-medical coaching.
+  - **Multilingual Voice & Text Interface:** Instant toggle and Web Speech API synthesis/recognition for **English, Hindi, and Gujarati**.
+  - **Interactive Prompt Chips:**
+    - *"Why is my neck getting tired during afternoon work?"*
+    - *"Give me a two-minute desk movement routine in Gujarati."*
+    - *"How should I adjust my monitor based on today's Desk Analyzer scan?"*
+    - *"Explain my afternoon posture drop in Hindi."*
+
+#### Screen 7: Pain & Comfort Journal (`/app/journal`)
+- **Interactive SVG Human Body Map (Anterior & Posterior Views):**
+  - Clickable zones: *Cervical Neck, Upper Trapezius, Left/Right Shoulder, Thoracic Upper Back, Lumbar Lower Back, Wrists/Forearms, Hips/Pelvis, Knees*.
+  - Log discomfort intensity (1–10), sensation tags (*Stiffness, Fatigue, Tension*), active task context, and whether a previous AI recommendation helped.
+- **Closed-Loop Baseline Coupling & Correlation Timeline:**
+  - Automatically overlays logged discomfort events onto the day's posture Z-score timeline (e.g., correlating 4:00 PM cervical stiffness with sustained forward head posture).
+  - If discomfort $\ge 5/10$ is logged following a session with zero alerts, offers a 1-click **Adaptive Threshold Tightening** ($10\%$ stricter Z-score cutoff).
+
+#### Screen 8: Reports, Analytics & B.Tech Volunteer Validation Suite (`/app/reports`)
+- **Tab 1 — Personal & Organization Analytics:**
+  - Weekly alignment trendlines, Time-of-Day Ergonomic Risk Heatmap (8 AM–10 PM, Mon–Sun), Reminder Compliance scorecard, and JSON/CSV/Printable PDF export.
+  - When switched to **Organization / University View**, displays privacy-preserving aggregated cohort scores, department ergonomic risk heatmaps, and break compliance across Students, Developers, Office Staff, and Factory Teams without exposing individual camera feeds or personal journal notes.
+- **Tab 2 — Live 20–30 Volunteer Validation & Ground-Truth Recorder (B.Tech Thesis Module):**
+  - **Interactive Volunteer Trial Recorder:** Allows recruiting and logging volunteers (`VOL-01` to `VOL-30`) with digital Informed Consent checkbox, body-proportion/clothing notes, lighting tag (`Bright Daylight`, `Indoor Normal`, `Dim`), and camera placement tag (`0° Eye-Level`, `15° Laptop Below-Eye`, `30° Oblique Angle`).
+  - **Live Ground-Truth Observer Mode:** During a live or simulated session, pressing the **`G` hotkey (or on-screen Observer Toggle)** marks manual human ground-truth posture state (`Good` vs. `Deviated`) alongside ErgoSense AI's real-time classification.
+  - **Automated Confusion Matrix & 8-Benchmark Scorecard:** Automatically calculates and exports to CSV:
+    1. *Camera Accuracy* (True Positives, False Positives/False Alerts, False Negatives/Missed Detections, Precision, Recall, F1-Score across angles).
+    2. *Real-Time Performance* (Mean & 95th-percentile frame latency in ms and FPS).
+    3. *Lighting Resilience* (Landmark confidence stability across lux conditions).
+    4. *User Diversity* (False-alert reduction before vs. after Personal Baseline Calibration across 25 pre-populated volunteer profiles + live trials).
+    5. *Activity Recognition* (Confusion matrix across Sitting, Standing, Walking, and Exercise).
+    6. *Notification Utility* (Followed vs. dismissed reminder rate).
+    7. *Resource & Battery Efficiency* (Main-thread frame time and Web Worker CPU overhead).
+    8. *Privacy Verification Audit* (Automated check confirming 0 bytes of video uploaded).
+
+#### Screen 9: Connected Devices & Personal Settings (`/app/devices` & `/app/settings`)
+- **Connected Devices & Sensor Bridge (`/app/devices`):**
+  - Manage *Desktop Web Studio*, *Mobile Browser PWA Companion* (with QR pairing generator), *Live Smartphone IMU Travelling Mode* (activates `DeviceMotionEvent` accelerometer/gyroscope stream with real-time step/cadence waveform), and *Smartwatch / Posture Wearable Simulator* (Web Bluetooth / WebSocket stream).
+- **Personal, Accessibility & Privacy Settings (`/app/settings`):**
+  - Re-calibrate Personal Baseline, adjust mobility/tolerance sensitivity ($\sigma_i$ multiplier for accessibility), inspect raw `IndexedDB` / PostgreSQL JSON summaries, and execute a **1-Click Purge All Personal Data** action.
+
+---
+
+## 5. EXACT BIOMECHANICAL MATH, OCCLUSION FALLBACK & TEMPORAL ENGINE (`src/lib/movement-engine.ts`)
+
+Implement the client-side biomechanical engine with exact vector math, coordinate normalization, and signal filtering:
+
+1. **Inverted Y-Axis Reference & EMA Low-Pass Filtering:**
+   - In MediaPipe `PoseLandmarker`, $+Y$ points **downward**. Define the upward vertical reference vector as $\vec{v} = (0, -1, 0)$.
+   - Smooth all raw 3D landmark coordinates $P_k(t)$ using an Exponential Moving Average filter ($\alpha = 0.25$) before computing angles to eliminate single-frame webcam jitter:
+     $$\hat{P}_k(t) = 0.25 P_k(t) + 0.75 \hat{P}_k(t-1)$$
+
+2. **Scale-Invariant Feature Extraction & Seated Desk Hip-Occlusion Fallback:**
+   - **Cervical Flexion Angle ($\theta_{\text{neck}}$):** Angle between the mid-shoulder ($\hat{P}_{11,12}$) to mid-ear/tragion ($\hat{P}_{7,8}$) vector and the upward vertical vector $\vec{v} = (0, -1, 0)$:
+     $$\theta_{\text{neck}} = \arccos\left(\frac{(\hat{P}_{\text{ear}} - \hat{P}_{\text{shoulder}}) \cdot \vec{v}}{\|\hat{P}_{\text{ear}} - \hat{P}_{\text{shoulder}}\|}\right)$$
+   - **Hip Visibility Check (Seated Desk Occlusion Fallback):**
+     - *If Hips Are Visible* ($\min(\text{visibility}_{23}, \text{visibility}_{24}) \ge 0.50$):
+       - Compute **Torso Inclination ($\theta_{\text{torso}}$)** using the mid-hip ($\hat{P}_{23,24}$) to mid-shoulder ($\hat{P}_{11,12}$) vector against $\vec{v} = (0, -1, 0)$.
+       - Normalize **Coronal Shoulder Asymmetry ($\Delta_{\text{shoulder}}$)** by torso length $\|\hat{P}_{\text{shoulder}} - \hat{P}_{\text{hip}}\|$.
+     - *If Hips Are Occluded by Desk* ($\min(\text{visibility}_{23}, \text{visibility}_{24}) < 0.50$):
+       - Normalize **Coronal Shoulder Asymmetry** using 3D inter-acromial shoulder width:
+         $$\Delta_{\text{shoulder}} = \frac{|\hat{y}_{11} - \hat{y}_{12}|}{\|\hat{P}_{11} - \hat{P}_{12}\|}$$
+       - Estimate **Seated Forward Torso Lean ($\theta_{\text{torso}}$)** from the normalized Z-depth shift of the mid-shoulder relative to calibrated sitting baseline depth ($z_{\text{baseline}}$) and shoulder pixel width scale.
+   - **Desk Viewing Distance Estimation ($D_{\text{cm}}$):**
+     $$D_{\text{cm}} \approx \frac{14.5 \times f_{\text{px}}}{\|\hat{p}_7 - \hat{p}_8\|_{\text{px}}}$$
+   - **Static Micro-Motion Variance ($\sigma^2_{\text{motion}}$):** Rolling coordinate variance of nose and shoulder landmarks over a 5-minute window.
+
+3. **Personal Baseline Z-Score & Closed-Loop Adaptive Tuning:**
+   - Compute per-metric Z-score against the user's calibrated baseline $(\mu_i, \sigma_i)$ for the active mode:
+     $$Z_i(t) = \frac{|m_i(t) - \mu_i|}{\max(\sigma_i, 2.5)}$$
+   - **Adaptive Feedback Rules:**
+     - *User clicks "Comfortable / False Alert":* Update $\sigma_i \leftarrow \min(1.10 \sigma_i, 8.0^\circ)$ and $\mu_i \leftarrow 0.90 \mu_i + 0.10 m_i(t)$.
+     - *User logs discomfort $\ge 5/10$ in Comfort Journal without prior alerts:* Tighten Z-score threshold from $2.0$ to $1.8$ for the correlated anatomical region.
+
+4. **5-State Temporal Hysteresis State Machine:**
+   - `UNRELIABLE_VIEW`: Mean upper-body landmark visibility $< 0.65$ -> pause scoring and guide camera framing.
+   - `OPTIMAL`: All $Z_i(t) \le 2.0$ and $\Delta_{\text{shoulder}} \le 0.08$.
+   - `TRANSIENT_SHIFT`: Deviation detected ($Z_i(t) > 2.0$), but rolling 30-second window deviation ratio is $< 0.75$ (e.g., reaching for a coffee mug or glancing at notes for 10 seconds -> **strictly suppress alerts**).
+   - `SUSTAINED_DEVIATION`: Rolling 30-second buffer is $\ge 80\%$ full and deviation ratio is $\ge 0.75$ -> emit context-aware nudge only if cooldown hysteresis ($\ge 180\text{s}$) has elapsed and Driving Safe Mode is off.
+   - `STATIC_FATIGUE`: Continuous session duration exceeds threshold (default 40 mins) with $\sigma^2_{\text{motion}} < 1.2$ -> prompt dynamic micro-break even if posture is `OPTIMAL`.
+
+---
+
+## 6. DELIVERABLE EXECUTION RULES
+1. **Complete Navigation & Zero Dead Ends:** Both the Public Marketing Website (8 routes/views) and the Authenticated Web Application (9 workspace screens + Profile/Organization switcher) must be fully navigable and interactive inside a single cohesive Next.js application.
+2. **Pre-Seeded Realistic Data + Live Engine:** Pre-populate `IndexedDB`/state with realistic multi-day movement sessions, calibrated baselines, comfort journal correlations, and a 25-volunteer B.Tech benchmark dataset (`VOL-01` to `VOL-25`), while allowing the user to run real live webcam tracking, interactive biomechanical slider simulation, and live `VOL-26+` ground-truth recording immediately in the browser.

@@ -1,0 +1,6 @@
+{
+  "name": "ErgoSense AI",
+  "description": "Cross-platform biometric ergonomics ecosystem and real-time posture companion platform with biomechanical spine visualization and fleet telemetry.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
