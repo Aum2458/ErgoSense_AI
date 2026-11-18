@@ -204,8 +204,11 @@ export function subscribeToErgoSenseChannel(
       pusher.connection.bind('connected', () => {
         if (!disposed) onStatusChange?.('connected');
       });
-    } catch (err) {
-      console.warn('[Pusher Client Warning]:', err);
+      pusher.connection.bind('error', () => {
+        // SSE stream remains active as the primary fallback bridge
+      });
+    } catch {
+      // Ignore client Pusher init errors when SSE bridge is active
     }
   }
 

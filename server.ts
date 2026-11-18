@@ -13,29 +13,45 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
+// Helper to clean env values (strips whitespace and accidental surrounding quotes)
+function cleanEnv(val?: string): string {
+  return (val || '').trim().replace(/^['"]|['"]$/g, '');
+}
+
+function isPlaceholderSecret(val: string): boolean {
+  const lower = val.toLowerCase();
+  return !lower || lower.includes('your_') || lower.includes('placeholder') || lower.includes('changeme');
+}
+
 // Initialize Pusher if credentials are provided in env
-const pusherAppId = process.env.PUSHER_APP_ID;
-const pusherKey =
+const pusherAppId = cleanEnv(process.env.PUSHER_APP_ID);
+const pusherKey = cleanEnv(
   process.env.PUSHER_KEY ||
-  process.env.NEXT_PUBLIC_PUSHER_APP_KEY ||
-  process.env.VITE_PUSHER_APP_KEY ||
-  process.env.VITE_PUSHER_KEY;
-const pusherSecret = process.env.PUSHER_SECRET;
-const pusherCluster =
+    process.env.NEXT_PUBLIC_PUSHER_APP_KEY ||
+    process.env.VITE_PUSHER_APP_KEY ||
+    process.env.VITE_PUSHER_KEY
+);
+const pusherSecret = cleanEnv(process.env.PUSHER_SECRET);
+const rawCluster = cleanEnv(
   process.env.PUSHER_CLUSTER ||
-  process.env.NEXT_PUBLIC_PUSHER_CLUSTER ||
-  process.env.VITE_PUSHER_CLUSTER ||
-  process.env.VITE_PUSHER_CLUSTER ||
-  'ap2';
+    process.env.NEXT_PUBLIC_PUSHER_CLUSTER ||
+    process.env.VITE_PUSHER_CLUSTER ||
+    'ap2'
+);
+const pusherCluster = /^[a-z0-9-]+$/i.test(rawCluster) ? rawCluster : 'ap2';
 
 let pusher: Pusher | null = null;
-if (pusherAppId && pusherKey && pusherSecret && !pusherSecret.includes('your_')) {
+let pusherCooldownUntil = 0;
+let lastPusherError: string | null = null;
+
+if (pusherAppId && pusherKey && !isPlaceholderSecret(pusherSecret)) {
   pusher = new Pusher({
     appId: pusherAppId,
     key: pusherKey,
     secret: pusherSecret,
     cluster: pusherCluster,
     useTLS: true,
+    timeout: 5000,
   });
   console.log(`[Pusher] Initialized channel engine on cluster: ${pusherCluster}`);
 } else {
@@ -157,11 +173,30 @@ app.use(
 );
 app.use(express.json({ limit: '2mb' }));
 
-function broadcastChannelEvent(channel: string, event: string, data: any) {
-  if (pusher) {
-    pusher.trigger(channel, event, data).catch((err) => {
-      console.warn('[Pusher Trigger Error]:', err.message);
-    });
+let lastRealTelemetryAt = 0;
+
+function broadcastChannelEvent(
+  channel: string,
+  event: string,
+  data: any,
+  options: { triggerPusher?: boolean } = {}
+) {
+  const shouldTriggerPusher = options.triggerPusher !== false;
+  if (pusher && shouldTriggerPusher && Date.now() >= pusherCooldownUntil) {
+    pusher
+      .trigger(channel, event, data)
+      .then(() => {
+        lastPusherError = null;
+      })
+      .catch((err: any) => {
+        const detail = err?.error?.message || err?.body || err?.message || 'Pusher request error';
+        if (lastPusherError !== detail) {
+          console.info(`[Pusher] Falling back to SSE bridge (${detail})`);
+        }
+        lastPusherError = detail;
+        // Back off for 60s before retrying Pusher REST calls so transient network failures do not spam logs
+        pusherCooldownUntil = Date.now() + 60_000;
+      });
   }
 
   const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -243,6 +278,7 @@ app.post('/api/telemetry', async (req: Request, res: Response) => {
   try {
     const normalized = normalizeIncomingPayload(req.body || {});
     latestTelemetry = normalized;
+    lastRealTelemetryAt = Date.now();
 
     memoryTelemetryStore.push(normalized);
     if (memoryTelemetryStore.length > 2000) {
@@ -250,7 +286,7 @@ app.post('/api/telemetry', async (req: Request, res: Response) => {
     }
 
     // Broadcast immediately via Pusher + SSE for sub-40ms UI updates
-    broadcastChannelEvent('ergosense-channel', 'new-telemetry', normalized);
+    broadcastChannelEvent('ergosense-channel', 'new-telemetry', normalized, { triggerPusher: true });
 
     // Asynchronously persist to MongoDB if configured
     connectToDatabase()
@@ -493,6 +529,7 @@ app.get('/api/health', async (_req: Request, res: Response) => {
       status: 'operational',
       mongodbConnected: !!db,
       pusherConfigured: !!pusher,
+      pusherLastError: lastPusherError,
       activeStreams: sseClients.size,
       timestamp: new Date().toISOString(),
     },
@@ -501,12 +538,15 @@ app.get('/api/health', async (_req: Request, res: Response) => {
 });
 
 // -------------------------------------------------------------
-// Background Live Telemetry Stream (simulates mobile/Python edge stream when SSE listeners are open)
+// Background Live Telemetry Stream (simulates mobile/Python edge stream on local SSE bridge)
 // -------------------------------------------------------------
 let simTick = 0;
 setInterval(() => {
   if (sseClients.size === 0) return;
-  simTick += 0.12;
+  // Pause synthetic background ticks for 6s right after real POST telemetry arrives
+  if (Date.now() - lastRealTelemetryAt < 6000) return;
+
+  simTick += 0.14;
 
   const neckFlexion = Number((16.5 + Math.sin(simTick * 0.5) * 6.5).toFixed(1));
   const shoulderTilt = Number((Math.sin(simTick * 0.32) * 3.8).toFixed(1));
@@ -526,8 +566,8 @@ setInterval(() => {
   });
 
   latestTelemetry = synthetic;
-  broadcastChannelEvent('ergosense-channel', 'new-telemetry', synthetic);
-}, 450);
+  broadcastChannelEvent('ergosense-channel', 'new-telemetry', synthetic, { triggerPusher: false });
+}, 900);
 
 // Start Express + Vite dev/prod static server
 async function startServer() {
